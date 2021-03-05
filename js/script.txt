@@ -1,0 +1,530 @@
+//globals
+var renderer;
+var camera;
+var scene;
+var threadY = 1;
+//var controls;
+var mainTank;
+var frame = 0;
+window.onload = init;
+
+//main
+function init() {
+
+	InitScene();
+	var p = new Plane(100,100);	// ground
+	//p.Color(0x696969);
+
+	var tank = new Tank();
+	tank.Rotation(0,-0.1,0);
+	mainTank = tank.GetTHREE();
+	for(var i = -40; i<50;i+=10){
+		var t = tank.GetTHREE().clone();
+		t.position.set(i,0,-30);
+		t.rotation.y = Math.PI*0.1*i/10;
+		scene.add(t);
+	}
+	document.addEventListener( "keydown", doKey, false );
+	console.log("Init");	
+	Animate();
+	console.log("end");
+}
+
+// Init
+
+function InitScene(){
+	scene = new THREE.Scene();
+	InitRender();
+	InitCamera();
+	InitLight();
+	document.body.appendChild( renderer.domElement );
+	controls = new THREE.OrbitControls( camera, renderer.domElement );
+	//controls.autoRotate = true;
+	console.log("init scene");
+}
+
+function InitRender(){
+	renderer = new THREE.WebGLRenderer();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.shadowMap.enabled = true;
+	renderer.setClearColor( 0x444444 );
+}
+
+function InitCamera(){
+	camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 1000 );
+	camera.position.set( 15, 10, 30 );
+	camera.lookAt( scene.position );
+}
+
+function InitLight(){
+	    // add spotlight for the shadows
+		var spotLight = new THREE.SpotLight( 0xffffff );
+		spotLight.position.set( 10, 20, 20 );
+		spotLight.shadow.camera.near = 20;
+		spotLight.shadow.camera.far = 50;
+		spotLight.castShadow = true;
+	
+		scene.add( spotLight );
+}
+
+// Update
+
+function Update(){
+	//controls.update();
+	/*
+	//TO DO: fix thread animation on curve	
+	for(var i =0;i<tab.length;i++){
+		if(frame != 50){
+		tab[i].Move(0,1/50,0);
+		}else{
+			tab[i].Position(5,i/5,0); 
+		}
+	}
+	if(frame == 50){ threadY = 1;} 
+
+	for(var i =0;i<curve1.length;i++){
+		
+		if(frame != 50){
+			//curve1[i].c.position.y = 0;
+			console.log(curve1[i].c.position.y);
+			if(threadY>0 && threadY!= -1){
+				curve1[i].Move(0,-YtoPowerOF4(threadY),threadY);
+			}else{
+				curve1[i].Move(0,YtoPowerOF4(threadY),-threadY);
+			}
+			//console.log(-YtoPowerOF4(threadY));
+			//console.log(threadY/50);
+		}else{
+			if(i>2 && i<11){
+				threadY-= 0.1;
+			}
+			//console.log(frame);
+			//console.log(threadY);
+			//console.log(i);
+			curve1[i].Position(5,-1.2+YtoPowerOF4(threadY),-threadY+1);
+		}
+		threadY-=0.1;
+	}
+	*/
+	if(frame != 50){
+		frame++;
+	}else{
+		frame = 0;
+	}
+	//console.log(controls.getAzimuthalAngle());
+}
+
+function Animate() {
+	requestAnimationFrame( Animate );
+	Update();
+	renderer.render( scene, camera );
+	//console.log("Animate");
+}
+
+// Math
+
+class Vector3d{
+	constructor(x , y, z){
+		this.x = x;
+		this.y = y;
+		this.z = z;
+	}
+	UpdatePosition(x, y, z){
+		this.x += x;
+		this.y += y;
+		this.z += z;
+	}
+}
+
+function YtoPowerOF4(y){
+	return Math.pow(y,4);
+}
+
+// Basic shapes
+
+class Plane{
+	constructor(width, height){
+		var planeGeometry = new THREE.PlaneGeometry( width, height );
+		var planeMaterial = new THREE.MeshLambertMaterial( { color: 0xffffff } );
+		//var planeMaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+		this.plane = new THREE.Mesh( planeGeometry, planeMaterial );
+		this.plane.receiveShadow = true;
+		this.plane.rotation.x = -0.5*Math.PI;
+		this.plane.receiveShadow = true;
+		scene.add(this.plane);
+	}
+	Position(x,y,z=0){
+		this.plane.position.x = x;
+		this.plane.position.y = y;
+		this.plane.position.z = z;
+	}
+
+	Color(color){
+		this.plane.material.color.setHex(color);
+	}
+}
+
+class cube{
+	constructor(width,height,depth){
+		this.geometry = new THREE.BoxGeometry( width, height, depth );
+		this.material = new THREE.MeshBasicMaterial( { color: 0x000000 } );
+		this.cube = new THREE.Mesh( this.geometry, this.material );
+
+		this.cube.castShadow = true;
+		this.cube.receiveShadow = true;
+		scene.add( this.cube );
+	}
+	
+	Rotation(x,y,z){
+		this.cube.rotation.x = x*Math.PI;
+		this.cube.rotation.y = y*Math.PI;
+		this.cube.rotation.z = z*Math.PI;		
+	}
+
+	Rotate(width, height = 0, depth = 0){
+		this.cube.rotation.y += height;
+		this.cube.rotation.x += width;
+		this.cube.rotation.z += depth;
+	}
+	
+	Position(x,y,z){
+		this.cube.position.x = x;
+		this.cube.position.y = y;
+		this.cube.position.z = z;
+	}
+	Move(x,y,z){
+		this.cube.position.x += x;
+		this.cube.position.y += y;
+		this.cube.position.z += z;
+	}
+
+	GetTHREE(){
+		return this.cube;
+	}
+
+	Color(color){
+		this.cube.material.color.setHex( color );
+	}
+}
+
+class Cylinder{
+	constructor(radiusTop = 1, radiusBotm = 1, height = 1, color = 0xffff00, radialSegments = 8){
+		/*radiusTop — Radius of the cylinder at the top. Default is 1.
+		radiusBottom — Radius of the cylinder at the bottom. Default is 1.
+		height — Height of the cylinder. Default is 1.
+		radialSegments — Number of segmented faces around the circumference of the cylinder. Default is 8*/
+		var geometry = new THREE.CylinderGeometry( radiusTop, radiusBotm, height, radialSegments );
+		var material = new THREE.MeshBasicMaterial( {color: color} );
+		this.cylinder = new THREE.Mesh( geometry, material );
+		this.cylinder.rotation.z = -0.5*Math.PI;
+		this.cylinder.receiveShadow = true;
+		this.cylinder.castShadow = true;
+
+		scene.add( this.cylinder );
+	}
+
+	Position(x,y,z){
+		this.cylinder.position.x = x;
+		this.cylinder.position.y = y;
+		this.cylinder.position.z = z;
+	}
+
+	Rotation(x,y,z){
+		this.cylinder.rotation.x = x*Math.PI;
+		this.cylinder.rotation.y = y*Math.PI;
+		this.cylinder.rotation.z = z*Math.PI;
+	}
+
+	Color(color){
+		this.cylinder.material.color.setHex(color);
+	}
+
+	GetTHREE(){
+		return this.cylinder;
+	}
+}
+
+class Sphere{
+	constructor(radius, wSegments, hSegments, phiLength = Math.PI*2, thetaLength = Math.PI ){
+		/*radius — sphere radius. Default is 1.
+		widthSegments — number of horizontal segments. Minimum value is 3, and the default is 8.
+		heightSegments — number of vertical segments. Minimum value is 2, and the default is 6.
+		phiStart — specify horizontal starting angle. Default is 0.
+		phiLength — specify horizontal sweep angle size. Default is Math.PI * 2.
+		thetaStart — specify vertical starting angle. Default is 0.
+		thetaLength — specify vertical sweep angle size. Default is Math.PI.*/ 
+		var geometry = new THREE.SphereGeometry( radius, wSegments, hSegments,0,phiLength,0,thetaLength );
+		var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+		this.sphere = new THREE.Mesh( geometry, material );
+		this.sphere.castShadow = true;
+		this.sphere.recieveShadow = true;
+
+		this.Rotation(-0.5,0,0);
+		scene.add( this.sphere );
+	}
+
+	Position(x,y,z){
+		this.sphere.position.x = x;
+		this.sphere.position.y = y;
+		this.sphere.position.z = z;
+	}
+
+	Rotation(x,y,z){
+		this.sphere.rotation.x = x*Math.PI;
+		this.sphere.rotation.y = y*Math.PI;
+		this.sphere.rotation.z = z*Math.PI;
+	}
+
+	Color(color){
+		this.sphere.material.color.setHex(color);
+	}
+	GetTHREE(){
+		return this.sphere;
+	}
+}
+
+
+// Advanced shapes
+
+class Track{
+	constructor(length = 30){
+		this.group = new THREE.Group();
+		this.length = length;
+		this.GenerateCurves();
+		this.GenerateStraights();
+		scene.add(this.group);
+	}
+
+	Position(x,y,z){
+		this.group.position.x = x;
+		this.group.position.y = y;
+		this.group.position.z = z;
+	}
+
+	Rotation(x,y,z){
+		this.group.rotation.x = x*Math.PI;;
+		this.group.rotation.y = y*Math.PI;
+		this.group.rotation.z = z*Math.PI;
+	}
+
+	GetPosition(){
+		return this.group.position;
+	}
+
+	GetTHREE(){return this.group;}
+
+	GenerateCurves(){
+		for(var i = 1; i>=-1; i-= 0.1){
+				var tCube = new cube(1,0.1,0.1);
+				var tCube2 = new cube(1,0.1,0.1);
+				if(i>-0.7 && i<0.7){
+					i-= 0.1;
+				}
+				tCube.Position(5,i+1,-1.2+YtoPowerOF4(i));
+				tCube2.Position(5,i+1,40/5-1.2-YtoPowerOF4(i));
+				this.group.add(tCube.GetTHREE());
+				this.group.add(tCube2.GetTHREE());
+		}
+	}
+			
+	GenerateStraights(){
+		for(var i = 0; i<this.length; i++){
+			var tCube = new cube(1,0.1,0.1);
+			var tCube2 = new cube(1,0.1,0.1);
+			tCube.Position(5,0,i/5);
+			tCube2.Position(5,2,i/5);
+			this.group.add(tCube.GetTHREE());
+			this.group.add(tCube2.GetTHREE());
+		}
+	}
+}
+
+class TankWheels{	// to do: add length parameter compatible with thread class
+	constructor(length = 7){
+		this.group = new THREE.Group();
+		scene.add(this.group);
+		for(var i =0;i<length;i++){
+			var cylinder = new Cylinder(0.9,0.9,0.5,0x007f00,128);
+			if(i%2 == 0) {
+				cylinder.Position(4.75,1,-0.15 + i*1);
+				cylinder.Color(0x007f00);
+			}
+			else{
+				cylinder.Position(5.25,1,-0.15 + i*1);
+				cylinder.Color(0x004c00);
+			}
+			this.group.add(cylinder.GetTHREE());
+		}
+	}
+
+	Position(x,y,z){
+		this.group.position.x = x;
+		this.group.position.y = y;
+		this.group.position.z = z;
+	}
+
+	Rotation(x,y,z){
+		this.group.rotation.x = x*Math.PI;
+		this.group.rotation.y = y*Math.PI;
+		this.group.rotation.z = z*Math.PI;
+	}
+
+	GetTHREE(){return this.group;}
+}
+
+class TrackCover{
+	constructor(){
+		this.group = new THREE.Group();
+		var temp = new cube(1.1,0.1,7);
+		temp.Position(5,2.3,2.3);
+		temp.Color(0x003300);
+
+		var temp2 = new cube(1.1,0.1,1.5);
+		temp2.Position(5,2,6.4);
+		temp2.Rotation(1/9,0,0);
+		temp2.Color(0x003300);
+
+		var temp3 = new cube(0.1,1.1,7);
+		temp3.Position(5.6,1.7,2.3);
+		temp3.Color(0x003300);
+
+		this.group.add(temp.GetTHREE());
+		this.group.add(temp2.GetTHREE());
+		this.group.add(temp3.GetTHREE());
+		scene.add(this.group);
+	}
+	GetTHREE(){ return this.group; }
+	
+	Position(x,y,z){
+		this.group.position.x = x;
+		this.group.position.y = y;
+		this.group.position.z = z;
+	}
+
+	Rotation(x,y,z){
+		this.group.rotation.x = x*Math.PI;
+		this.group.rotation.y = y*Math.PI;
+		this.group.rotation.z = z*Math.PI;
+	}
+}
+
+class TankTrack{	// to do: add length parameter compatible with thread class
+	constructor(x,y,z,length = 30){
+		this.group = new THREE.Group();
+		this.track = new Track();
+		this.wheels = new TankWheels();
+		this.trackCover = new TrackCover();
+		this.group.add(this.track.GetTHREE());
+		this.group.add(this.wheels.GetTHREE());
+		this.group.add(this.trackCover.GetTHREE());
+		this.Position(x,y,z);
+		scene.add(this.group);
+	}
+
+	Position(x,y,z){
+		this.group.position.x = x;
+		this.group.position.y = y;
+		this.group.position.z = z;
+	}
+
+	Rotation(x,y,z){
+		this.group.rotation.x = x*Math.PI;
+		this.group.rotation.y = y*Math.PI;
+		this.group.rotation.z = z*Math.PI;
+	}
+
+	GetTHREE(){return this.group;}
+}
+
+class TankTurret{
+	constructor(){
+		this.group = new THREE.Group();
+		var sphere = new Sphere(1.95,128,128,Math.PI);
+		sphere.Position(2.5,2,2);
+		sphere.Color(0x003300);
+		
+		var cannon = new Cylinder(0.2,0.2,6,0x007f00,128);
+		cannon.Rotation(0.48,0,0)
+		cannon.Position(2.5,3.2,6.2);
+
+		this.group.add(cannon.GetTHREE());
+		this.group.add(sphere.GetTHREE());
+		scene.add(this.group);
+	}
+	
+	Position(x,y,z){
+		this.group.position.x = x;
+		this.group.position.y = y;
+		this.group.position.z = z;
+	}
+
+	Rotation(x,y,z){
+		this.group.rotation.x = x*Math.PI;
+		this.group.rotation.y = y*Math.PI;
+		this.group.rotation.z = z*Math.PI;
+	}
+
+	GetTHREE(){return this.group;}
+}
+
+class Tank{
+	constructor(x=0,y=0,z=0){
+		this.group = new THREE.Group();
+		var left = new TankTrack(0,0,0);
+		var right = new TankTrack(0,0,0);
+		right.GetTHREE().applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
+		right.Position(5,0,0);
+	
+		//grp.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
+		var hull = new cube(3.9,3.9/2,7.4);
+		hull.Position(2.5,1.45,2.45);
+		hull.Color(0x004c00);
+
+		var front = new Cylinder(1.1,1.1,3.9,0x004c00,3);
+		front.Position(2.5,1.45,6.7);
+	
+		var tankTurret = new TankTurret();
+
+		this.group.add(left.GetTHREE());
+		this.group.add(right.GetTHREE());
+		this.group.add(hull.GetTHREE());
+		this.group.add(front.GetTHREE());
+		this.group.add(tankTurret.GetTHREE());
+
+		scene.add(this.group);
+	}
+
+	Position(x,y,z){
+		this.group.position.x = x;
+		this.group.position.y = y;
+		this.group.position.z = z;
+	}
+
+	Rotation(x,y,z){
+		this.group.rotation.x = x*Math.PI;
+		this.group.rotation.y = y*Math.PI;
+		this.group.rotation.z = z*Math.PI;
+	}
+
+	GetTHREE(){return this.group;}
+}
+
+// Misc
+
+function doKey( event ) {
+    var code = event.keyCode;
+    var rotated = true;
+    switch( code ) {
+        case 37: mainTank.rotation.y -= 0.03; break;  // left arrow
+        case 39: mainTank.rotation.y += 0.03; break;  // right arrow
+        case 38: mainTank.rotation.x -= 0.03; break;  // up arrow
+        case 40: mainTank.rotation.x += 0.03; break;  // down arrow
+        case 33: mainTank.rotation.z -= 0.03; break;  // page up
+        case 34: mainTank.rotation.z += 0.03; break;  // page down
+        case 36: mainTank.rotation.set( 0, 0, 0 ); break; // home
+        default: rotated = false;
+    }
+    if ( rotated ) {
+        event.preventDefault(); // Prevent keys from scrolling the page.
+    }
+}
